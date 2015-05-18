@@ -6,7 +6,7 @@ from tkFileDialog import *
 from tkMessageBox import *
 import MySQLdb
 import os
-#Codigo escrito por Guillermo Gimenez 2015
+#Codigo escrito por Guillermo Gimenez 2015/r0ker
 #DATOS DB = 
 HOST = 'localhost'
 USUARIO = 'root'
@@ -16,7 +16,7 @@ DIRECTORIO_SERVER = ''
 DIRECTORIO_L2 = ''
 print "[+]L2TEU Iniciado:::::::::::::::"
 def consultar(query=''): 
-	try:
+	#try:
 		datos = [HOST, USUARIO, PASS, NOMBREDB] 
 		conn = MySQLdb.connect(*datos)  
 		cursor = conn.cursor()         
@@ -31,7 +31,7 @@ def consultar(query=''):
 		print "[+]Consulta realizada:"
 		print "  -> "+query
 		return dat
-	except:showerror("ERROR!!","OCURRIÓ UN ERROR AL EJECUTAR EL COMANDO DE SOLICITUD\n A LA BASE DE DATOS.")
+	#except:showerror("ERROR!!","OCURRIÓ UN ERROR AL EJECUTAR EL COMANDO DE SOLICITUD\n A LA BASE DE DATOS.")
 def conseguir(nombre_tabla,que_cosa):#SELECT id FROM characters
 	#NOMBRE DE LA TABLA, ID DE COLUMNA , CABEZAL DE GUARDADO,DONDE
 	donde_guardar = {}
@@ -172,13 +172,16 @@ def buscar(x,com,vv):#BUSCAR EN COMBOX DE XML POR ID
 				mini.transient(vv)
 				mini.grab_set()
 				vv.wait_window(mini)
-def buscar_npc(x,com,vv):#BUSCAR EN COMBOX EN NPC
+def buscar_general(x,com,vv,que):#BUSCAR EN COMBOX EN NPC
 			coincidencias = []
-			for e in npc:
-				for i in e: 
-					st = ((i[2]).replace("\"","").replace("'","").replace("\s","'s"))
-					if x in st[1:len(st)-1]:
-						coincidencias.append(st[0:len(st)])
+			for e in que:
+					try:
+						for i in e: 
+							st = ((i[2]).replace("\"","").replace("'","").replace("\s","'s"))
+							if x in st[1:len(st)-1]:
+								coincidencias.append(st[0:len(st)])
+					except:
+						if x in e:coincidencias.append(e)
 			if coincidencias == []:showinfo("No encontrado!","No se han encontrado coincidencias.")
 			else:
 				for i in list(set(coincidencias)):
@@ -202,6 +205,115 @@ def buscar_npc(x,com,vv):#BUSCAR EN COMBOX EN NPC
 				mini.transient(vv)
 				mini.grab_set()
 				vv.wait_window(mini)
+def AIO_Creador():
+	#Codeado el 18/05/15
+	personajes = {}
+	skilles_a_agregar = []
+	skilles_a_agregar_final = {}
+	aio =  Tk()
+	aio.iconbitmap("icon.ico")
+	aio.title("Skill Administrador")
+	aio.geometry("400x240+350+250")
+	aio.resizable(width=False,height=False)
+	Label(aio,text="Seleccionar opcion de skilles:").pack()
+	barra = Scrollbar(aio,orient=VERTICAL)
+	lista_personajes = Listbox(aio,width=58,yscrollcommand=barra.set)
+	lista_personajes.pack()
+	barra.config(command=lista_personajes.yview)
+	barra.place(rely=0.09,relx=0.94,height=165)
+	#Carga los personajes con sus ID unicos en el diccionario personajes
+	consulta =  consultar("SELECT * FROM characters")
+	def procesar_agregado(x):
+		for i in skilles_a_agregar:
+			skill = consultar("SELECT name FROM skill_trees where skill_id=%s"%i)
+			if skill == ():skilles_a_agregar_final["Skill Desconocido"] = [i,1]
+			else:skilles_a_agregar_final[skill[0]] = [i,len(skill)]
+		for i in skilles_a_agregar_final:
+			ide = (skilles_a_agregar_final[i])[0]
+			nombre = i[0]
+			if nombre == "S":nombre = "Skill Desconocido"
+			nivel = (skilles_a_agregar_final[i])[1]
+			s = "INSERT INTO character_skills VALUES (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
+			try:consultar(s)
+			except:"UPDATE character_skills set (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
+		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
+	for i in consulta:
+		for e in i:personajes[i[2]] = int(i[1])
+	#Los carga en la lista
+	def funcion_cargar_skilles():
+		persona = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
+		archivo_skilles = askopenfile(title="Cargar archivo con los ID skiles")
+		n = archivo_skilles.read().split(" ")
+		for i in n[0].split("\n"):
+			if i == "":pass
+			else:
+				try:skilles_a_agregar.append(i.split("#")[0].replace("\n",""))
+				except:pass
+		showinfo("Información","Archivo cargado correctamente! %s skilles encontrados y cargados en la memoria."%len(skilles_a_agregar))
+		confirmacion = askokcancel("Confirmación","Seguro queres darle esos skilles a %s?"%lista_personajes.get(lista_personajes.curselection()[0]))
+		try:
+			if confirmacion == True:procesar_agregado(persona)
+		except:showerror("Error","Selecciona primero a uno de la lista!")
+	def funcion_dar_skill():
+		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
+		dar = Toplevel()
+		dar.iconbitmap("icon.ico")
+		Label(dar,text="Seleccionar el skill (enter para buscar)").pack()
+		dar.geometry("200x90+300+150")
+		dar.title("Dar Skill")
+		skilles0 = []
+		sk = consultar("SELECT name FROM skill_trees")
+		for i in sk:skilles0.append(i[0])
+		skill = ttk.Combobox(dar,values=list(set(skilles0)))
+		skill.set("Seleccionar skill")
+		skill.pack()
+		skill.bind("<Return>",lambda c:buscar_general(skill.get(),skill,aio))
+		def aceptar():
+					sk = consultar("SELECT skill_id FROM skill_trees where name='%s'"%skill.get())
+					skilles_a_agregar.append(int((sk[0])[0]))
+					procesar_agregado(str(personaje_actual))
+					dar.destroy()
+		c = Button(dar,text="Aceptar",width=23,command=aceptar)
+		c.place(relx=0.08,rely=0.6)
+		dar.transient(aio)
+		dar.grab_set()
+		aio.wait_window(aio)
+	def funcion_ver_skills():
+		nm = lista_personajes.get(lista_personajes.curselection()[0])
+		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
+		ver = Toplevel()
+		ver.iconbitmap("icon.ico")
+		ver.geometry("300x300+350+250")
+		ver.title("Lista skilles")
+		barra = Scrollbar(ver,orient=VERTICAL)
+		caja = Listbox(ver,width=50,height=60,yscrollcommand=barra.set)
+		barra.config(command=caja.yview)
+		barra.pack(side=RIGHT,fill=Y)
+		caja.pack()
+		skilles_char = []
+		sk = consultar("SELECT skill_name FROM character_skills")
+		for i in sk:skilles_char.append(str(i[0]))
+		for i in skilles_char:caja.insert(END,i)
+		def eliminar(x):
+			el = askokcancel("Confirmación","Seguro que deseas eliminar este skill de %s?"%nm)
+			if el == True:
+				try:
+					s = "DELETE FROM character_skills where skill_name='%s' and char_obj_id=%s"%(x,personaje_actual)
+					con = consultar(s)
+					caja.delete(caja.index(caja.curselection()[0]))
+				except:showerror("Error","Se produjo un error desconocido")
+		caja.bind("<Delete>",lambda c:eliminar( caja.get(  caja.curselection()[0]   )))
+		ver.transient(aio)
+		ver.grab_set()
+		aio.wait_window(ver)
+	for i in personajes:lista_personajes.insert(END,i)
+	boton1 = Button(aio,text="Desde Archivo",width=15,command=funcion_cargar_skilles)
+	boton1.place(rely=0.8,relx=0.06)
+	boton2 = Button(aio,text="Un Skill",width=15,command=funcion_dar_skill)
+	boton2.place(rely=0.8,relx=0.356)
+	boton3 = Button(aio,text="Ver/Del Skills",width=15,command=funcion_ver_skills)
+	boton3.place(rely=0.8,relx=0.65)
+	aio.mainloop()
 def XML_EDITOR():#EDITOR XML
 	ventana0 = Tk()
 	ventana0.title("Shop XML Editor L2J")
@@ -605,7 +717,6 @@ def HTML_editor(x):#Editor de HTML
 		ventana.resizable(width=FALSE,height=FALSE)
 		sss = "Proceda a editar su Html correspondiente al NPC %s" %(NOMBRE_GEN)
 		linea_actual = StringVar()
-		#Label(ventana,text=sss).pack()
 		barra = Scrollbar(ventana,orient=VERTICAL)
 		caja = Listbox(ventana,width=102,height=28,yscrollcommand=barra.set)
 		barra.config(command=caja.yview)
@@ -782,8 +893,6 @@ def HTML_editor(x):#Editor de HTML
 		espacio = Button(ventana,text="Espacio",width=14,command=lambda:insertar("<br>"))
 		espacio.place(rely=0.2,relx=0.81)
 		caja.bind("<space>",lambda c:insertar("<br>"))
-		#cent3 = Label(ventana,text="  .......Etiquetas.......")
-		#cent3.place(rely=0.2500,relx=0.81)
 		cent = Button(ventana,text="Centrado<",width=14,command=lambda:insertar("<center>"))
 		cent.place(rely=0.3,relx=0.81)
 		cent = Button(ventana,text="Centrado>",width=14,command=lambda:insertar("</center>"))
@@ -913,22 +1022,6 @@ def HTML_editor(x):#Editor de HTML
 			ACTUAL.append("\n")
 			actualizar()
 		def salir():ventana.destroy()
-		"""
-		def deshacer():
-				global ACTUAL
-		
-				ACTUAL = historial[len(historial)-2]
-				del historial[len(historial)-3]
-				actualizar()
-				for e in  historial:
-					print e
-		def rehacer():
-				global ACTUAL,INDICE_PROCESO
-				if a <1:pass
-				else:
-					ACTUAL = historial[len(historial)-2]
-					actualizar()
-		"""
 		def ver_codigo_fuente():
 			mini = Toplevel()
 			mini.title("Codigo Fuente Actual")
@@ -994,8 +1087,6 @@ def HTML_editor(x):#Editor de HTML
 				Interfaz()
 		menu1.add_separator()
 		menu1.add_command(label="Salir a menu",command=salir_a_menu)
-		"""menu2.add_command(label="Deshacer",command=deshacer)
-		menu2.add_command(label="Rehacer",command=rehacer)"""
 		mn = Menu(ventana,tearoff=0)
 		def copiar():
 			global temporal_copia
@@ -1088,7 +1179,7 @@ def NPC_Creator():#EDITOR NPC
 		clan = ttk.Combobox(ventana0,values=clans)
 		clan.place(relx=0.6,rely=0.66)
 		clan.set("Facción")
-		def on():buscar_npc(clasev.get(),clasev,ventana0)
+		def on():buscar_general(clasev.get(),clasev,ventana0,npc)
 		ll = Button(ventana0,text="Buscar",command=lambda :on())
 		ll.place(relx=0.82,rely = 0.22)
 		def se(object):
@@ -1105,7 +1196,7 @@ def NPC_Creator():#EDITOR NPC
 				if con == True:
 					showerror(title="Error",message="Ninguna coincidencia :(")
 					clasev.set("")
-		clasev.bind("<Return>",lambda c:buscar_npc(clasev.get(),clasev,ventana0))
+		clasev.bind("<Return>",lambda c:buscar_general(clasev.get(),clasev,ventana0),npc)
 		def generar():#Generar y guardar sql correspondiente
 			global ID_GEN,NOMBRE_GEN,TIPO_GEN
 			idd = ide.get()
@@ -1343,22 +1434,23 @@ def macros(x):
 			v1 = Label(v,text="Tabla:")
 			v1.place(relx=0.0,rely=0.0)
 			tabla = ttk.Combobox(v,values=tablas_lista,width=20)
-			tabla.set((actual[0])[1:])
+			tabla.set((actual[0]))
 			tabla.place(relx=0.3,rely=0.0)
 			v1 = Label(v,text="Referencia:")
 			v1.place(relx=0.0,rely=0.15)
 			referencia = Entry(v,width=23)
 			referencia.place(relx=0.3,rely=0.15)
-			referencia.insert(END,(actual[1])[1:])
+			referencia.insert(END,(actual[1]))
 			v2 = Label(v,text="Valor:")
 			v2.place(relx=0.0,rely=0.30)
 			valor = Entry(v,width=23)
 			valor.place(relx=0.3,rely=0.30)
-			valor.insert(END,(actual[2])[1:])
+			valor.insert(END,(actual[2]))
 			def gc():
 				macros_lista[x] = [tabla.get(),referencia.get(),valor.get()]
 				actualiza()
 				archivo_macros()
+				showinfo("Aviso","Se guardaron correctamente todos los cambios :)")
 			g = Button(v,text="Guardar Cambio",command=lambda :gc())
 			g.place(relx=0.0,rely=0.60)
 			v.transient(ventana3)
@@ -1407,7 +1499,7 @@ def Interfaz():
 	except:crear_archivo()
 	ventana54 = Tk()
 	ventana54.title("L2J TEU Alpha ")
-	ventana54.geometry("400x300+350+240")
+	ventana54.geometry("384x320+350+240")
 	ventana54.iconbitmap("icon.ico")
 	men_superior = Menu(ventana54)
 	menu_herramientas = Menu(men_superior,tearoff=0)
@@ -1427,13 +1519,17 @@ def Interfaz():
 		for i in ap:
 			al = i.split(",")
 			temp = []
-			for m in al:
-				temp.append(m.replace(")","").replace("\n","").replace("(","").replace("[","").replace("]","").replace("'",""))
+			for m in al:temp.append(m.replace(")","").replace("\n","").replace("(","").replace("[","").replace("]","").replace("'",""))
 			macros_lista[temp[0]] = temp[1:]
 	cargar_macros()
 	l1 = Label(ventana54,text="Tweaks:")
 	l1.place(relx=0.8,rely=0.05)
-	menus.add_command(label="Salir",command=lambda :ventana54.quit())
+	def salir():
+		c = askokno("Salir?","Seguro que desea salir del programa?")
+		if c == True:
+			os.system("TASKKILL /F /IM \"TEU L2J.exe\"")
+			ventana54.destroy()
+	menus.add_command(label="Salir",command=lambda :salir())
 	l.place(relx=0.0,rely=0.05)
 	def iniciar_server():
 		adh = intentar_conexion()
@@ -1445,7 +1541,6 @@ def Interfaz():
 		if adh == True:
 				comando = "cd /D \""+DIRECTORIO_SERVER+"\login\" & start startLoginServer.bat"
 				os.system(comando)
-
 	def matar():os.system("TASKKILL /F /IM java.exe & TASKKILL /F /IM cmd.exe")
 	iniciar = Button(ventana54,text="Iniciar Game Server",command=iniciar_server)
 	iniciar.place(relx=0.0,rely=0.22)
@@ -1486,11 +1581,14 @@ def Interfaz():
 			XML_EDITOR()
 	def iniciar_macros():
 		adh = intentar_conexion()
-		if adh == True:
-			macros()
+		if adh == True:macros()
+	def iniciar_aio():
+		adh = intentar_conexion()
+		if adh == True:AIO_Creador()
 	menu_herramientas.add_cascade(label="Creador de NPC",command=iniciar_npc)
 	menu_herramientas.add_cascade(label="Editor de Html",command=iniciar_html)
 	menu_herramientas.add_cascade(label="Editor de Shops (Multisell)",command=iniciar_xml)
+	menu_herramientas.add_cascade(label="AIO Creador",command=iniciar_aio)
 	vert = Button(ventana54,text="DB  Macros",command=lambda : macros(ventana54))
 	vert.place(relx=0.8,rely=0.12)
 	def iniciar_l2():
@@ -1565,7 +1663,7 @@ def Interfaz():
 	menu_op.add_command(label="Acerca de..",command=lambda : Acerca_de(ventana54))
 	im = PhotoImage(file="logo.gif")
 	lab  = Label(ventana54,image=im)
-	lab.place(relx=0.01,rely=0.45)
+	lab.place(relx=-0.004,rely=0.45)
 	ventana54.config(menu=men_superior)
 	ventana54.mainloop()
 Interfaz()
