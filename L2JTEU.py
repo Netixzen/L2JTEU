@@ -16,7 +16,7 @@ DIRECTORIO_SERVER = ''
 DIRECTORIO_L2 = ''
 print "[+]L2TEU Iniciado:::::::::::::::"
 def consultar(query=''): 
-	try;
+	try:
 		datos = [HOST, USUARIO, PASS, NOMBREDB] 
 		conn = MySQLdb.connect(*datos)  
 		cursor = conn.cursor()         
@@ -694,7 +694,7 @@ def XML_EDITOR():#EDITOR XML
 	menu2.add_command(label="Agregar Producto",command=agregar_producto)
 	ventana0.config(menu=menu_superior)
 	ventana0.mainloop()
-def HTML_editor(x):#Editor de HTML	
+def HTML_editor(x,y):#Editor de HTML	
 		global elegido,archivo_html,ACTUAL,title_v
 		historial = []
 		if x == "existente":
@@ -709,7 +709,7 @@ def HTML_editor(x):#Editor de HTML
 			else:
 			"""
 			ACTUAL = ["\n","<html><body>","<head>","\n","</head>","\n","\n","\n","\n","\n","\n","\n","\n","\n","</body></html>","\n"]
-		ventana  = Tk()
+		ventana  = Toplevel()
 		ventana.geometry("800x500+20+32")
 		titulo_ventana = "NPC HTML Editor"
 		ventana.title(titulo_ventana)
@@ -1086,7 +1086,7 @@ def HTML_editor(x):#Editor de HTML
 				ventana.destroy()
 				Interfaz()
 		menu1.add_separator()
-		menu1.add_command(label="Salir a menu",command=salir_a_menu)
+		menu1.add_command(label="Salir a menu",command=lambda :ventana.destroy())
 		mn = Menu(ventana,tearoff=0)
 		def copiar():
 			global temporal_copia
@@ -1110,7 +1110,9 @@ def HTML_editor(x):#Editor de HTML
 		caja.bind("<Button-3>",menu_desplegable)
 		menu2.add_command(label="Borrar todo",command=borrar)
 		ventana.config(menu=menu0)
-		ventana.mainloop()
+		ventana.transient(y)
+		ventana.grab_set()
+		y.wait_window(ventana)
 def NPC_Creator():#EDITOR NPC 
 	#Inicializacion de interfaz grafica general
 	ventana0  = Tk()
@@ -1525,7 +1527,7 @@ def Interfaz():
 	l1 = Label(ventana54,text="Tweaks:")
 	l1.place(relx=0.8,rely=0.05)
 	def salir():
-		c = askokno("Salir?","Seguro que desea salir del programa?")
+		c = askokcancel("Salir?","Seguro que desea salir del programa?")
 		if c == True:
 			os.system("TASKKILL /F /IM \"TEU L2J.exe\"")
 			ventana54.destroy()
@@ -1568,8 +1570,8 @@ def Interfaz():
 	def iniciar_html():
 		cn = intentar_conexion()
 		if cn == True:
-			ventana54.destroy()
-			HTML_editor("existente")
+			
+			HTML_editor("existente",ventana54)
 	def iniciar_xml():
 		cn = intentar_conexion()
 		if cn == True:
