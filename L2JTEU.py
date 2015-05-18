@@ -16,7 +16,6 @@ DIRECTORIO_SERVER = ''
 DIRECTORIO_L2 = ''
 print "[+]L2TEU Iniciado:::::::::::::::"
 def consultar(query=''): 
-	try:
 		datos = [HOST, USUARIO, PASS, NOMBREDB] 
 		conn = MySQLdb.connect(*datos)  
 		cursor = conn.cursor()         
@@ -29,7 +28,6 @@ def consultar(query=''):
 		cursor.close()               
 		conn.close
 		return dat
-	except:showinfo("Advertencia, el comando %s no se ejecuto correctamente.."%query)
 def conseguir(nombre_tabla,que_cosa):#SELECT id FROM characters
 	#NOMBRE DE LA TABLA, ID DE COLUMNA , CABEZAL DE GUARDADO,DONDE
 	donde_guardar = {}
@@ -234,7 +232,6 @@ def AIO_Creador(x):
 			s = "INSERT INTO character_skills VALUES (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
 			try:consultar(s)
 			except:"UPDATE character_skills set (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
-		
 	for i in consulta:
 		for e in i:personajes[i[2]] = int(i[1])
 	#Los carga en la lista
@@ -254,6 +251,7 @@ def AIO_Creador(x):
 		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
 	def funcion_dar_skill():
 		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
+		nm = lista_personajes.get(lista_personajes.curselection()[0])
 		dar = Toplevel()
 		dar.iconbitmap("icon.ico")
 		Label(dar,text="Seleccionar el skill (enter para buscar)").pack()
@@ -265,11 +263,12 @@ def AIO_Creador(x):
 		skill = ttk.Combobox(dar,values=list(set(skilles0)))
 		skill.set("Seleccionar skill")
 		skill.pack()
-		skill.bind("<Return>",lambda c:buscar_general(skill.get(),skill,aio))
+		skill.bind("<Return>",lambda c:buscar_general(skill.get(),skill,aio,skilles0))
 		def aceptar():
 					sk = consultar("SELECT skill_id FROM skill_trees where name='%s'"%skill.get())
 					skilles_a_agregar.append(int((sk[0])[0]))
 					procesar_agregado(str(personaje_actual))
+					showinfo("Confirmación","Se ah agregado el skill %s a %s correctamente"%(skill.get(),nm))
 					dar.destroy()
 		c = Button(dar,text="Aceptar",width=23,command=aceptar)
 		c.place(relx=0.08,rely=0.6)
@@ -1198,7 +1197,7 @@ def NPC_Creator():#EDITOR NPC
 				if con == True:
 					showerror(title="Error",message="Ninguna coincidencia :(")
 					clasev.set("")
-		clasev.bind("<Return>",lambda c:buscar_general(clasev.get(),clasev,ventana0),npc)
+		clasev.bind("<Return>",lambda c:buscar_general(clasev.get(),clasev,ventana0,npc))
 		def generar():#Generar y guardar sql correspondiente
 			global ID_GEN,NOMBRE_GEN,TIPO_GEN
 			idd = ide.get()
