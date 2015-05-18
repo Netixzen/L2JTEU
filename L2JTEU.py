@@ -6,7 +6,7 @@ from tkFileDialog import *
 from tkMessageBox import *
 import MySQLdb
 import os
-#Codigo escrito por Guillermo Gimenez 2015/r0ker
+#Codigo escrito por Guillermo Gimenez 2015
 #DATOS DB = 
 HOST = 'localhost'
 USUARIO = 'root'
@@ -16,7 +16,7 @@ DIRECTORIO_SERVER = ''
 DIRECTORIO_L2 = ''
 print "[+]L2TEU Iniciado:::::::::::::::"
 def consultar(query=''): 
-	#try:
+	try;
 		datos = [HOST, USUARIO, PASS, NOMBREDB] 
 		conn = MySQLdb.connect(*datos)  
 		cursor = conn.cursor()         
@@ -28,10 +28,8 @@ def consultar(query=''):
 		else:conn.commit()              # Hacer efectiva la escritura de datos 
 		cursor.close()               
 		conn.close
-		print "[+]Consulta realizada:"
-		print "  -> "+query
 		return dat
-	#except:showerror("ERROR!!","OCURRIÓ UN ERROR AL EJECUTAR EL COMANDO DE SOLICITUD\n A LA BASE DE DATOS.")
+	except:showinfo("Advertencia, el comando %s no se ejecuto correctamente.."%query)
 def conseguir(nombre_tabla,que_cosa):#SELECT id FROM characters
 	#NOMBRE DE LA TABLA, ID DE COLUMNA , CABEZAL DE GUARDADO,DONDE
 	donde_guardar = {}
@@ -205,12 +203,12 @@ def buscar_general(x,com,vv,que):#BUSCAR EN COMBOX EN NPC
 				mini.transient(vv)
 				mini.grab_set()
 				vv.wait_window(mini)
-def AIO_Creador():
+def AIO_Creador(x):
 	#Codeado el 18/05/15
 	personajes = {}
 	skilles_a_agregar = []
 	skilles_a_agregar_final = {}
-	aio =  Tk()
+	aio =  Toplevel()
 	aio.iconbitmap("icon.ico")
 	aio.title("Skill Administrador")
 	aio.geometry("400x240+350+250")
@@ -236,7 +234,7 @@ def AIO_Creador():
 			s = "INSERT INTO character_skills VALUES (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
 			try:consultar(s)
 			except:"UPDATE character_skills set (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
-		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
+		
 	for i in consulta:
 		for e in i:personajes[i[2]] = int(i[1])
 	#Los carga en la lista
@@ -251,9 +249,9 @@ def AIO_Creador():
 				except:pass
 		showinfo("Información","Archivo cargado correctamente! %s skilles encontrados y cargados en la memoria."%len(skilles_a_agregar))
 		confirmacion = askokcancel("Confirmación","Seguro queres darle esos skilles a %s?"%lista_personajes.get(lista_personajes.curselection()[0]))
-		try:
-			if confirmacion == True:procesar_agregado(persona)
-		except:showerror("Error","Selecciona primero a uno de la lista!")
+		if confirmacion == True:
+			procesar_agregado(persona)
+		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
 	def funcion_dar_skill():
 		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
 		dar = Toplevel()
@@ -313,7 +311,9 @@ def AIO_Creador():
 	boton2.place(rely=0.8,relx=0.356)
 	boton3 = Button(aio,text="Ver/Del Skills",width=15,command=funcion_ver_skills)
 	boton3.place(rely=0.8,relx=0.65)
-	aio.mainloop()
+	aio.transient(x)
+	aio.grab_set()
+	x.wait_window(aio)
 def XML_EDITOR():#EDITOR XML
 	ventana0 = Tk()
 	ventana0.title("Shop XML Editor L2J")
@@ -1584,7 +1584,7 @@ def Interfaz():
 		if adh == True:macros()
 	def iniciar_aio():
 		adh = intentar_conexion()
-		if adh == True:AIO_Creador()
+		if adh == True:AIO_Creador(ventana54)
 	menu_herramientas.add_cascade(label="Creador de NPC",command=iniciar_npc)
 	menu_herramientas.add_cascade(label="Editor de Html",command=iniciar_html)
 	menu_herramientas.add_cascade(label="Editor de Shops (Multisell)",command=iniciar_xml)
