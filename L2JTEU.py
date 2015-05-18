@@ -246,8 +246,7 @@ def AIO_Creador(x):
 				except:pass
 		showinfo("Información","Archivo cargado correctamente! %s skilles encontrados y cargados en la memoria."%len(skilles_a_agregar))
 		confirmacion = askokcancel("Confirmación","Seguro queres darle esos skilles a %s?"%lista_personajes.get(lista_personajes.curselection()[0]))
-		if confirmacion == True:
-			procesar_agregado(persona)
+		if confirmacion == True:procesar_agregado(persona)
 		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
 	def funcion_dar_skill():
 		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
@@ -1374,55 +1373,57 @@ def macros(x):
 					actualiza()
 					archivo_macros()
 		def ejecutar_macro(x):
-			m = Toplevel()
-			m.transient(ventana3)
-			m.geometry("228x150+350+250")
-			m.iconbitmap("icon.ico")
-			m.resizable(width=FALSE,height=FALSE)
-			Label(m,text="Modificar valores:").pack()
-			scrolll = Scrollbar(m,orient=VERTICAL)
-			ca = Listbox(m,width=32,yscrollcommand=scrolll.set)
-			scrolll.config(command=ca.yview)
-			scrolll.pack(side=RIGHT,fill=Y)
-			ca.pack()
-			sen = macros_lista[x]
-			def actualizar0():
-				lis =  conseguir(sen[0],sen[1])
-				ca.delete(0,END)
-				try:
-					for i in lis:ca.insert(END,i)
-				except:m.destroy()
-			actualizar0()
-			m.grab_set()
-			def cmd(x1):
-				g = Toplevel()
-				g.title("Editar valor")
-				g.iconbitmap("icon.ico")
-				g.geometry("300x80+350+250")
-				testo = IntVar()
-				st = "Modificacion de variable '%s' en '%s'" %(sen[2],x1[0])
-				testo.set(st)
-				k = Label(g,textvar=testo)
-				k.pack()
-				valor = Entry(g,width=30)
-				valor.pack()
-				def guardar():
+			try:
+				m = Toplevel()
+				m.transient(ventana3)
+				m.geometry("228x150+350+250")
+				m.iconbitmap("icon.ico")
+				m.resizable(width=FALSE,height=FALSE)
+				Label(m,text="Modificar valores:").pack()
+				scrolll = Scrollbar(m,orient=VERTICAL)
+				ca = Listbox(m,width=32,yscrollcommand=scrolll.set)
+				scrolll.config(command=ca.yview)
+				scrolll.pack(side=RIGHT,fill=Y)
+				ca.pack()
+				sen = macros_lista[x]
+				def actualizar0():
+					lis =  conseguir(sen[0],sen[1])
+					ca.delete(0,END)
 					try:
+						for i in lis:ca.insert(END,i)
+					except:m.destroy()
+				actualizar0()
+				m.grab_set()
+				def cmd(x1):
+					g = Toplevel()
+					g.title("Editar valor")
+					g.iconbitmap("icon.ico")
+					g.geometry("300x80+350+250")
+					testo = IntVar()
+					st = "Modificacion de variable '%s' en '%s'" %(sen[2],x1[0])
+					testo.set(st)
+					k = Label(g,textvar=testo)
+					k.pack()
+					valor = Entry(g,width=30)
+					valor.pack()
+					def guardar():
 						try:
-							actualizar(sen[0],sen[1]+"="+"'"+x1[0]+"'",sen[2]+"="+valor.get())
-							g.destroy()
-							actualizar0()
-						except:
-							actualizar(sen[0],sen[1]+"="+"'"+x1[0]+"'",sen[2]+"="+"'"+valor.get()+"'")
-							g.destroy()
-							actualizar0()
-					except:showerror("Error","Algo ocurrio y no se pudo modificar nada.\nRevisa que el valor tenga que ser numeral o de caracteres.")
-				Button(g,text="Guardar Cambio",command=guardar).pack()
-				g.transient(m)
-				g.grab_set()
-				m.wait_window(g)
-			ca.bind("<Double-1>",lambda c:cmd(ca.get(ca.curselection()[0])))
-			ventana3.wait_window(m)
+							try:
+								actualizar(sen[0],sen[1]+"="+"'"+x1[0]+"'",sen[2]+"="+valor.get())
+								g.destroy()
+								actualizar0()
+							except:
+								actualizar(sen[0],sen[1]+"="+"'"+x1[0]+"'",sen[2]+"="+"'"+valor.get()+"'")
+								g.destroy()
+								actualizar0()
+						except:showerror("Error","Algo ocurrio y no se pudo modificar nada.\nRevisa que el valor tenga que ser numeral o de caracteres.")
+					Button(g,text="Guardar Cambio",command=guardar).pack()
+					g.transient(m)
+					g.grab_set()
+					m.wait_window(g)
+				ca.bind("<Double-1>",lambda c:cmd(ca.get(ca.curselection()[0])))
+				ventana3.wait_window(m)
+			except:pass
 		def actualiza():
 			lista.delete(0,END)
 			for i in macros_lista:lista.insert(END,i)
@@ -1467,7 +1468,10 @@ def macros(x):
 		lista.bind("<Button-3>",menu_pop)
 		actualiza()
 		lista.bind("<Delete>",lambda c:eliminar(lista.get(lista.curselection()[0])))
-		lista.bind("<Double-1>",lambda c: ejecutar_macro(lista.get(lista.curselection()[0])))
+		try:
+			lista.bind("<Double-1>",lambda c: ejecutar_macro(lista.get(lista.curselection()[0])))
+		except:
+			pass
 		lista.pack()
 		ventana3.config(menu=menualto)
 		ventana3.transient(x)
