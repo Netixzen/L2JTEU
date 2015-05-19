@@ -174,8 +174,7 @@ def buscar_general(x,com,vv,que):#BUSCAR EN COMBOX EN NPC
 					try:
 						for i in e: 
 							st = ((i[2]).replace("\"","").replace("'","").replace("\s","'s"))
-							if x in st[1:len(st)-1]:
-								coincidencias.append(st[0:len(st)])
+							if x in st[1:len(st)-1]:coincidencias.append(st[0:len(st)])
 					except:
 						if x in e:coincidencias.append(e)
 			if coincidencias == []:showinfo("No encontrado!","No se han encontrado coincidencias.")
@@ -201,6 +200,7 @@ def buscar_general(x,com,vv,que):#BUSCAR EN COMBOX EN NPC
 				mini.transient(vv)
 				mini.grab_set()
 				vv.wait_window(mini)
+bien,go = 0,0
 def AIO_Creador(x):
 	#Codeado el 18/05/15
 	personajes = {}
@@ -220,22 +220,38 @@ def AIO_Creador(x):
 	#Carga los personajes con sus ID unicos en el diccionario personajes
 	consulta =  consultar("SELECT * FROM characters")
 	def procesar_agregado(x):
-		for i in skilles_a_agregar:
-			skill = consultar("SELECT name FROM skill_trees where skill_id=%s"%i)
-			if skill == ():skilles_a_agregar_final["Skill Desconocido"] = [i,1]
-			else:skilles_a_agregar_final[skill[0]] = [i,len(skill)]
+		global bien,go
+		for uuu in skilles_a_agregar:
+			temp = []
+			skill = consultar("SELECT name FROM skill_trees where skill_id=%s"%uuu)
+			skill2 = consultar("SELECT level FROM skill_trees where skill_id=%s"%uuu)
+			uu = consultar("SELECT skill_id FROM skill_trees where skill_id=%s"%uuu)
+			try:ii = uu[0]
+			except:ii = uu
+			mayor  = 0
+			for i in skill2:
+				temp.append(i)
+			m = 0
+			for m1 in temp:
+				if m1>m:m=m1
+			if skill == ():skilles_a_agregar_final["Skill Desconocido"] = [uuu,(1)]
+			else:skilles_a_agregar_final[skill[0]] = [uuu,m]	
 		for i in skilles_a_agregar_final:
 			ide = (skilles_a_agregar_final[i])[0]
 			nombre = i[0]
 			if nombre == "S":nombre = "Skill Desconocido"
 			nivel = (skilles_a_agregar_final[i])[1]
-			s = "INSERT INTO character_skills VALUES (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
-			try:consultar(s)
-			except:"UPDATE character_skills set (%s, %s, '%s', '%s', 0)"%(x,ide,nivel,nombre)
+			try:s = "INSERT INTO character_skills VALUES (%s, %s, %s, '%s', 0)"%(x,ide,nivel[0],nombre)
+			except:s = "INSERT INTO character_skills VALUES (%s, %s, %s, '%s', 0)"%(x,ide,nivel,nombre)
+			try:
+				consultar(s)
+				go +=1
+			except:pass
 	for i in consulta:
 		for e in i:personajes[i[2]] = int(i[1])
 	#Los carga en la lista
 	def funcion_cargar_skilles():
+		global bien,go
 		persona = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
 		archivo_skilles = askopenfile(title="Cargar archivo con los ID skiles")
 		n = archivo_skilles.read().split(" ")
@@ -244,10 +260,11 @@ def AIO_Creador(x):
 			else:
 				try:skilles_a_agregar.append(i.split("#")[0].replace("\n",""))
 				except:pass
-		showinfo("Información","Archivo cargado correctamente! %s skilles encontrados y cargados en la memoria."%len(skilles_a_agregar))
+		skilles_a_agregar
+		showinfo("Información","Archivo cargado correctamente! %s skilles encontrados y cargados en la memoria."%len(list(set(skilles_a_agregar))))
 		confirmacion = askokcancel("Confirmación","Seguro queres darle esos skilles a %s?"%lista_personajes.get(lista_personajes.curselection()[0]))
 		if confirmacion == True:procesar_agregado(persona)
-		showinfo("Eureka!","Se han agregado %s skilles correctamente! :)"%len(skilles_a_agregar_final))
+		showinfo("Eureka!","Se han agregado %s skilles correctamente! "%go)
 	def funcion_dar_skill():
 		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
 		nm = lista_personajes.get(lista_personajes.curselection()[0])
@@ -277,6 +294,7 @@ def AIO_Creador(x):
 	def funcion_ver_skills():
 		nm = lista_personajes.get(lista_personajes.curselection()[0])
 		personaje_actual = personajes[lista_personajes.get(lista_personajes.curselection()[0])]
+		print nm,personaje_actual
 		ver = Toplevel()
 		ver.iconbitmap("icon.ico")
 		ver.geometry("300x300+350+250")
@@ -287,9 +305,10 @@ def AIO_Creador(x):
 		barra.pack(side=RIGHT,fill=Y)
 		caja.pack()
 		skilles_char = []
-		sk = consultar("SELECT skill_name FROM character_skills")
+		sk = consultar("SELECT skill_name FROM character_skills where char_obj_id=%s"%personaje_actual)
 		for i in sk:skilles_char.append(str(i[0]))
 		for i in skilles_char:caja.insert(END,i)
+		skilles_char.sort()
 		def eliminar(x):
 			el = askokcancel("Confirmación","Seguro que deseas eliminar este skill de %s?"%nm)
 			if el == True:
@@ -1468,10 +1487,8 @@ def macros(x):
 		lista.bind("<Button-3>",menu_pop)
 		actualiza()
 		lista.bind("<Delete>",lambda c:eliminar(lista.get(lista.curselection()[0])))
-		try:
-			lista.bind("<Double-1>",lambda c: ejecutar_macro(lista.get(lista.curselection()[0])))
-		except:
-			pass
+		try:lista.bind("<Double-1>",lambda c: ejecutar_macro(lista.get(lista.curselection()[0])))
+		except:pass
 		lista.pack()
 		ventana3.config(menu=menualto)
 		ventana3.transient(x)
@@ -1505,6 +1522,7 @@ def Interfaz():
 	ventana54 = Tk()
 	ventana54.title("L2J TEU Alpha ")
 	ventana54.geometry("384x320+350+240")
+	ventana54.resizable(width=FALSE,height=FALSE)
 	ventana54.iconbitmap("icon.ico")
 	men_superior = Menu(ventana54)
 	menu_herramientas = Menu(men_superior,tearoff=0)
@@ -1572,9 +1590,7 @@ def Interfaz():
 			NPC_Creator()
 	def iniciar_html():
 		cn = intentar_conexion()
-		if cn == True:
-			
-			HTML_editor("existente",ventana54)
+		if cn == True:HTML_editor("existente",ventana54)
 	def iniciar_xml():
 		cn = intentar_conexion()
 		if cn == True:
@@ -1593,7 +1609,7 @@ def Interfaz():
 	menu_herramientas.add_cascade(label="Creador de NPC",command=iniciar_npc)
 	menu_herramientas.add_cascade(label="Editor de Html",command=iniciar_html)
 	menu_herramientas.add_cascade(label="Editor de Shops (Multisell)",command=iniciar_xml)
-	menu_herramientas.add_cascade(label="AIO Creador",command=iniciar_aio)
+	menu_herramientas.add_cascade(label="Dar Skilles",command=iniciar_aio)
 	vert = Button(ventana54,text="DB  Macros",command=lambda : macros(ventana54))
 	vert.place(relx=0.8,rely=0.12)
 	def iniciar_l2():
